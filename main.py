@@ -36,12 +36,8 @@ def handleDialog(res, req):
     if sessionStorage[userId]['name'] is None:
         if 'помощь' in req['request']['nlu']['tokens']:
             res['response']['text'] = 'Напиши Алисе своё имя.'
-            res['response']['buttons'] += [{'title': city.title(), 'hide': True} for city in cities]
             return
         name = getName(req)
-        if 'помощь' in req['request']['nlu']['tokens']:
-            res['response']['text'] = 'Напиши Алисе своё имя.'
-            return
         if name is None:
             res['response']['text'] = 'Не расслышала имя. Повтори, пожалуйста!'
         else:
@@ -51,11 +47,9 @@ def handleDialog(res, req):
     else:
         if 'помощь' in req['request']['nlu']['tokens']:
             res['response']['text'] = 'Напиши Алисе название города.'
+            res['response']['buttons'] += [{'title': city.title(), 'hide': True} for city in cities]
             return
         city = getCity(req)
-        if 'помощь' in req['request']['nlu']['tokens']:
-            res['response']['text'] = 'Напиши Алисе название города.'
-            return
         if city in cities:
             res['response']['card'] = {}
             res['response']['card']['type'] = 'BigImage'
