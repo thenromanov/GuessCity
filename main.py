@@ -68,7 +68,7 @@ def playGame(res, req):
     attempt = sessionStorage[userId]['attempt']
     res['response']['buttons'] = [{'title': 'Помощь', 'hide': True}]
     if 'помощь' in req['request']['nlu']['tokens']:
-        res['response']['text'] = 'Вам нужно узнать город, который загадала Алиса. Свои варианты отправляйте ей ;)'
+        res['response']['text'] = 'Вам нужно узнать город, какой загадала Алиса. Свои варианты отправляйте ей ;)'
         return
     if attempt == 1:
         city = random.choice(list(cities))
@@ -85,7 +85,8 @@ def playGame(res, req):
         if getCity(req) == city:
             res['response']['text'] = 'Правильно! Сыграем ещё?'
             res['response']['buttons'] = [{'title': 'Да', 'hide': True},
-                                          {'title': 'Нет', 'hide': True}]
+                                          {'title': 'Нет', 'hide': True},
+                                          {'title': 'Покажи город на карте', 'hide': True, 'url': 'https://yandex.ru/maps/?mode=search&text=' + city}]
             sessionStorage[userId]['guessed'].append(city)
             sessionStorage[userId]['game'] = False
             return
