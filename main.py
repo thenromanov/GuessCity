@@ -66,6 +66,10 @@ def handleDialog(res, req):
 def playGame(res, req):
     userId = req['session']['user_id']
     attempt = sessionStorage[userId]['attempt']
+    res['response']['buttons'] = [{'title': 'Помощь', 'hide': True}]
+    if 'помощь' in req['request']['nlu']['tokens']:
+        res['response']['text'] = 'Вам нужно узнать город, который загадала Алиса. Свои варианты отправляйте ей ;)'
+        return
     if attempt == 1:
         city = random.choice(list(cities))
         while city in sessionStorage[userId]['guessed']:
@@ -80,12 +84,16 @@ def playGame(res, req):
         city = sessionStorage[userId]['city']
         if getCity(req) == city:
             res['response']['text'] = 'Правильно! Сыграем ещё?'
+            res['response']['buttons'] = [{'title': 'Да', 'hide': True},
+                                          {'title': 'Нет', 'hide': True}]
             sessionStorage[userId]['guessed'].append(city)
             sessionStorage[userId]['game'] = False
             return
         else:
             if attempt == 3:
                 res['response']['text'] = f'Вы пытались. Это {city.title()}. Сыграем ещё?'
+                res['response']['buttons'] = [{'title': 'Да', 'hide': True},
+                                              {'title': 'Нет', 'hide': True}]
                 sessionStorage[userId]['game'] = False
                 sessionStorage[userId]['guessed'].append(city)
                 return
