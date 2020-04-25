@@ -20,7 +20,7 @@ def main():
     logging.info(f'Request: {request.json!r}')
     response = {'session': request.json['session'],
                 'version': request.json['version'],
-                'response': {'end_session': False, 'buttons': [{'title': 'Помощь', 'hide': False, 'payload': getHelp(request.json)}]}}
+                'response': {'end_session': False, 'buttons': [{'title': 'Помощь', 'hide': False}]}}
     handleDialog(response, request.json)
     logging.info(f'Response: {response!r}')
     return json.dumps(response)
@@ -28,12 +28,16 @@ def main():
 
 def handleDialog(res, req):
     userId = req['session']['user_id']
+    res['response']['buttons'] = [{'title': 'Помощь', 'hide': False}]
     if req['session']['new']:
         res['response']['text'] = 'Привет! Назови своё имя!'
         sessionStorage[userId] = {'name': None}
         return
     if sessionStorage[userId]['name'] is None:
         name = getName(req)
+        if 'помощь' in req['request']['nlu']['tokens']:
+            res['response']['text'] = 'Напиши Алисе своё имя.'
+            return
         if name is None:
             res['response']['text'] = 'Не расслышала имя. Повтори, пожалуйста!'
         else:
@@ -42,6 +46,9 @@ def handleDialog(res, req):
             res['response']['buttons'] += [{'title': city.title(), 'hide': True} for city in cities]
     else:
         city = getCity(req)
+        if 'помощь' in req['request']['nlu']['tokens']:
+            res['response']['text'] = 'Напиши Алисе название города.'
+            return
         if city in cities:
             res['response']['card'] = {}
             res['response']['card']['type'] = 'BigImage'
@@ -62,16 +69,6 @@ def getCity(req):
     for entity in req['request']['nlu']['entities']:
         if entity['type'] == 'YANDEX.GEO':
             return entity['value'].get('city', None)
-
-
-def getHelp(req):
-    response = {'session': request.json['session'],
-                'version': request.json['version'],
-                'response': {'end_session': False,
-                             'text': 'Это игра "Угадай город". '
-                             + 'Вам нужно познакомиться с Алисой '
-                             + 'и отправлять ей названия городов.'}}
-    return response
 
 
 if __name__ == '__main__':
