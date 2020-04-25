@@ -28,7 +28,6 @@ def main():
 
 def handleDialog(res, req):
     userId = req['session']['user_id']
-    res['response']['buttons'] = [{'title': 'Помощь', 'hide': False}]
     if req['session']['new']:
         res['response']['text'] = 'Привет! Назови своё имя!'
         sessionStorage[userId] = {'name': None, 'game': False}
@@ -41,8 +40,8 @@ def handleDialog(res, req):
             sessionStorage[userId]['name'] = name
             sessionStorage[userId]['guessed'] = []
             res['response']['text'] = f'Приятно познакомиться, {name.title()}. Я - Алиса. Отгадаешь город по фото?'
-            res['response']['buttons'] += [{'title': 'Да', 'hide': True},
-                                           {'title': 'Нет', 'hide': True}]
+            res['response']['buttons'] = [{'title': 'Да', 'hide': True},
+                                          {'title': 'Нет', 'hide': True}]
     else:
         if not sessionStorage[userId]['game']:
             if 'да' in req['request']['nlu']['tokens']:
@@ -58,8 +57,8 @@ def handleDialog(res, req):
                 res['end_session'] = True
             else:
                 res['response']['text'] = 'Не поняла ответа! Так да или нет?'
-                res['response']['buttons'] += [{'title': 'Да', 'hide': True},
-                                               {'title': 'Нет', 'hide': True}]
+                res['response']['buttons'] = [{'title': 'Да', 'hide': True},
+                                              {'title': 'Нет', 'hide': True}]
         else:
             playGame(res, req)
 
