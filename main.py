@@ -2,13 +2,14 @@ from flask import Flask, request
 import logging
 import json
 import random
+import requests
 
 app = Flask(__name__)
 
 logging.basicConfig(level=logging.INFO)
 
 cities = {'москва': ['1030494/d9ef8c16772da410d978', '1521359/2407f60e6ed44c34e4fe'],
-          'нью-йорк': ['965417/01a11c292efc8d3c59df', '1030494/a604aa188b2a4e660e62'],
+          'вена': ['1652229/d139f84798d675163f48', '213044/6510a52b95ed736c7428'],
           'париж': ['1540737/16bd53b968e9d445a0e0', '1652229/20c9895502d1feac35bc'],
           'сидней': ['1540737/07a7b5a61dbc8d53dc3c', '1656841/c718f6671b27649d4422']}
 
@@ -75,6 +76,7 @@ def playGame(res, req):
         while city in sessionStorage[userId]['guessed']:
             city = random.choice(list(cities))
         sessionStorage[userId]['city'] = city
+        sessionStorage[userId]['country'] = findCountry(city).lower()
         res['response']['card'] = {}
         res['response']['card']['type'] = 'BigImage'
         res['response']['card']['title'] = 'Что это за город?'
@@ -82,12 +84,19 @@ def playGame(res, req):
         res['response']['text'] = 'Тогда сыграем!'
     else:
         city = sessionStorage[userId]['city']
+        country = sessionStorage[userId]['country']
         if getCity(req) == city:
-            res['response']['text'] = 'Правильно! Сыграем ещё?'
+            sessionStorage[userId]['guessed'].append(city)
+            res['response']['text'] = 'Правильно! А в какой стране этот город?'
+            return
+        elif city in sessionStorage[userId]['guessed']:
+            if getCountry(req) == country:
+                res['response']['text'] = 'Правильно! Сыграем ещё?'
+            else:
+                res['response']['text'] = f'А вот тут ты неправ! Это {country.title()}! Сыграем ещё?'
             res['response']['buttons'] = [{'title': 'Да', 'hide': True},
                                           {'title': 'Нет', 'hide': True},
                                           {'title': 'Покажи город на карте', 'hide': True, 'url': 'https://yandex.ru/maps/?mode=search&text=' + city}]
-            sessionStorage[userId]['guessed'].append(city)
             sessionStorage[userId]['game'] = False
             return
         else:
@@ -117,6 +126,28 @@ def getCity(req):
     for entity in req['request']['nlu']['entities']:
         if entity['type'] == 'YANDEX.GEO':
             return entity['value'].get('city', None)
+
+
+def getCountry(req):
+    for entity in req['request']['nlu']['entities']:
+        if entity['type'] == 'YANDEX.GEO':
+            return entity['value'].get('country', None)
+
+
+def findCountry(city):
+    try:
+        url = "https://geocode-maps.yandex.ru/1.x/"
+        params = {
+            "apikey": "40d1649f-0493-4b70-98ba-98533de7710b",
+            'geocode': city,
+            'format': 'json'
+        }
+        data = requests.get(url, params).json()
+        return data['response']['GeoObjectCollection'][
+            'featureMember'][0]['GeoObject']['metaDataProperty'][
+            'GeocoderMetaData']['AddressDetails']['Country']['CountryName']
+    except Exception as e:
+        return e
 
 
 if __name__ == '__main__':
