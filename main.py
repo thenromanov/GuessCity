@@ -28,6 +28,10 @@ def main():
 
 def handleDialog(res, req):
     userId = req['session']['user_id']
+    res['response']['buttons'].append({'title': 'Помощь', 'hide': False})
+    if 'помощь' in req['request']['nlu']['tokens']:
+        res['response']['text'] = 'Это игра "Угадай город". Вам нужно познакомиться с Алисой и отправлять ей названия городов.'
+        return
     if req['session']['new']:
         res['response']['text'] = 'Привет! Назови своё имя!'
         sessionStorage[userId] = {'name': None}
