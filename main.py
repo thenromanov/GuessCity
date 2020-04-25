@@ -20,7 +20,7 @@ def main():
     logging.info(f'Request: {request.json!r}')
     response = {'session': request.json['session'],
                 'version': request.json['version'],
-                'response': {'end_session': False}}
+                'response': {'end_session': False, 'buttons': [{'title': 'Помощь', 'hide': False, 'payload': getHelp(request.json)}]}}
     handleDialog(response, request.json)
     logging.info(f'Response: {response!r}')
     return json.dumps(response)
@@ -28,10 +28,6 @@ def main():
 
 def handleDialog(res, req):
     userId = req['session']['user_id']
-    res['response']['buttons'] = [{'title': 'Помощь', 'hide': False}]
-    if 'помощь' in req['request']['nlu']['tokens']:
-        res['response']['text'] = 'Это игра "Угадай город". Вам нужно познакомиться с Алисой и отправлять ей названия городов.'
-        return
     if req['session']['new']:
         res['response']['text'] = 'Привет! Назови своё имя!'
         sessionStorage[userId] = {'name': None}
@@ -43,8 +39,7 @@ def handleDialog(res, req):
         else:
             sessionStorage[userId]['name'] = name
             res['response']['text'] = f'Приятно познакомиться, {name.title()}. Я - Алиса. Какой город хочешь увидеть?'
-            for city in cities:
-                res['response']['buttons'].append({'title': city.title(), 'hide': True})
+            res['response']['buttons'] += [{'title': city.title(), 'hide': True} for city in cities]
     else:
         city = getCity(req)
         if city in cities:
@@ -67,6 +62,16 @@ def getCity(req):
     for entity in req['request']['nlu']['entities']:
         if entity['type'] == 'YANDEX.GEO':
             return entity['value'].get('city', None)
+
+
+def getHelp(req):
+    response = {'session': request.json['session'],
+                'version': request.json['version'],
+                'response': {'end_session': False,
+                             'text': 'Это игра "Угадай город". '
+                             + 'Вам нужно познакомиться с Алисой '
+                             + 'и отправлять ей названия городов.'}}
+    return response
 
 
 if __name__ == '__main__':
