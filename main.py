@@ -20,7 +20,7 @@ def main():
     logging.info(f'Request: {request.json!r}')
     response = {'session': request.json['session'],
                 'version': request.json['version'],
-                'response': {'end_session': False, 'buttons': [{'title': 'Помощь', 'hide': False}]}}
+                'response': {'end_session': False}}
     handleDialog(response, request.json)
     logging.info(f'Response: {response!r}')
     return json.dumps(response)
@@ -34,9 +34,6 @@ def handleDialog(res, req):
         sessionStorage[userId] = {'name': None, 'game': False}
         return
     if sessionStorage[userId]['name'] is None:
-        if 'помощь' in req['request']['nlu']['tokens']:
-            res['response']['text'] = 'Напиши Алисе своё имя.'
-            return
         name = getName(req)
         if name is None:
             res['response']['text'] = 'Не расслышала имя. Повтори, пожалуйста!'
