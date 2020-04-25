@@ -31,7 +31,7 @@ def handleDialog(res, req):
     res['response']['buttons'] = [{'title': 'Помощь', 'hide': False}]
     if req['session']['new']:
         res['response']['text'] = 'Привет! Назови своё имя!'
-        sessionStorage[userId] = {'name': None}
+        sessionStorage[userId] = {'name': None, 'game': False}
         return
     if sessionStorage[userId]['name'] is None:
         if 'помощь' in req['request']['nlu']['tokens']:
@@ -42,22 +42,64 @@ def handleDialog(res, req):
             res['response']['text'] = 'Не расслышала имя. Повтори, пожалуйста!'
         else:
             sessionStorage[userId]['name'] = name
-            res['response']['text'] = f'Приятно познакомиться, {name.title()}. Я - Алиса. Какой город хочешь увидеть?'
-            res['response']['buttons'] += [{'title': city.title(), 'hide': True} for city in cities]
+            sessionStorage[userId]['guessed'] = []
+            res['response']['text'] = f'Приятно познакомиться, {name.title()}. Я - Алиса. Отгадаешь город по фото?'
+            res['response']['buttons'] += [{'title': 'Да', 'hide': True},
+                                           {'title': 'Нет', 'hide': True}]
     else:
-        if 'помощь' in req['request']['nlu']['tokens']:
-            res['response']['text'] = 'Напиши Алисе название города.'
-            res['response']['buttons'] += [{'title': city.title(), 'hide': True} for city in cities]
-            return
-        city = getCity(req)
-        if city in cities:
-            res['response']['card'] = {}
-            res['response']['card']['type'] = 'BigImage'
-            res['response']['card']['title'] = 'Я знаю этот город!'
-            res['response']['card']['image_id'] = random.choice(cities[city])
-            res['response']['text'] = 'Я угадал!'
+        if not sessionStorage[userId]['game']:
+            if 'да' in req['request']['nlu']['tokens']:
+                if len(sessionStorage[userId]['guessed']) == len(cities.keys()):
+                    res['response']['text'] = 'Ты отгадал все города!'
+                    res['end_session'] = True
+                else:
+                    sessionStorage[userId]['game'] = True
+                    sessionStorage[userId]['attempt'] = 1
+                    playGame(res, req)
+            elif 'нет' in req['request']['nlu']['tokens']:
+                res['response']['text'] = 'Ну и ладно!'
+                res['end_session'] = True
+            else:
+                res['response']['text'] = 'Не поняла ответа! Так да или нет?'
+                res['response']['buttons'] += [{'title': 'Да', 'hide': True},
+                                               {'title': 'Нет', 'hide': True}]
         else:
-            res['response']['text'] = 'Первый раз слышу об этом городе. Попробуй ещё разок!'
+            playGame(res, req)
+
+
+def playGame(res, req):
+    userId = req['session']['user_id']
+    attempt = sessionStorage[userId]['attempt']
+    if attempt == 1:
+        city = random.choice(list(cities))
+        while city in sessionStorage[userId]['guessed']:
+            city = random.choice(list(cities))
+        sessionStorage[userId]['city'] = city
+        res['response']['card'] = {}
+        res['response']['card']['type'] = 'BigImage'
+        res['response']['card']['title'] = 'Что это за город?'
+        res['response']['card']['image_id'] = cities[city][attempt - 1]
+        res['response']['text'] = 'Тогда сыграем!'
+    else:
+        city = sessionStorage[userId]['city']
+        if getCity(req) == city:
+            res['response']['text'] = 'Правильно! Сыграем ещё?'
+            sessionStorage[userId]['guessed'].append(city)
+            sessionStorage[userId]['game'] = False
+            return
+        else:
+            if attempt == 3:
+                res['response']['text'] = f'Вы пытались. Это {city.title()}. Сыграем ещё?'
+                sessionStorage[userId]['game'] = False
+                sessionStorage[userId]['guessed'].append(city)
+                return
+            else:
+                res['response']['card'] = {}
+                res['response']['card']['type'] = 'BigImage'
+                res['response']['card']['title'] = 'Неправильно. Вот тебе дополнительное фото'
+                res['response']['card']['image_id'] = cities[city][attempt - 1]
+                res['response']['text'] = 'А вот и не угадал!'
+    sessionStorage[userId]['attempt'] += 1
 
 
 def getName(req):
